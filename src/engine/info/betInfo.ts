@@ -390,5 +390,41 @@ export function getBetInfo(
         payoutText: "7:1 on craps, 15:1 on 11 (half the bet each)",
         tip: "Bet in even amounts so the halves split cleanly.",
       };
+
+    case "ALL_SMALL":
+      return {
+        ...base,
+        name: "All Small",
+        description:
+          "A multi-roll bonus: the shooter must roll every small number — 2, 3, 4, 5 and 6 — before a 7 shows.",
+        winsWhen: "All of 2, 3, 4, 5 and 6 are rolled before a 7.",
+        losesWhen: "A 7 rolls before the set is complete.",
+        payoutText: "34:1",
+        tip: "A long-shot lottery bet — fun, but the edge is steep. Keep it small.",
+      };
+
+    case "ALL_TALL":
+      return {
+        ...base,
+        name: "All Tall",
+        description:
+          "A multi-roll bonus: the shooter must roll every tall number — 8, 9, 10, 11 and 12 — before a 7 shows.",
+        winsWhen: "All of 8, 9, 10, 11 and 12 are rolled before a 7.",
+        losesWhen: "A 7 rolls before the set is complete.",
+        payoutText: "34:1",
+        tip: "A long-shot lottery bet — fun, but the edge is steep. Keep it small.",
+      };
+
+    case "ALL":
+      return {
+        ...base,
+        name: "All (Make 'Em All)",
+        description:
+          "The grand bonus: the shooter must roll every number 2–6 and 8–12 before a 7 shows.",
+        winsWhen: "All ten numbers (2-6, 8-12) are rolled before a 7.",
+        losesWhen: "A 7 rolls before the set is complete.",
+        payoutText: "175:1",
+        tip: "The biggest long shot on the board. A tiny stake for a huge payday.",
+      };
   }
 }

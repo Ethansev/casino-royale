@@ -42,14 +42,8 @@ export function chipTopTexture(amount: number, theme: Theme): CanvasTexture {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  const label = `$${Math.round(amount)}`;
-  const fontSize = label.length <= 3 ? 84 : label.length === 4 ? 68 : 54;
-  ctx.fillStyle = style.text;
-  ctx.font = `800 ${fontSize}px Helvetica, Arial, sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(label, c, c + 4);
-
+  // The denomination is shown as a billboarded label above the stack (so big
+  // amounts never get squished onto the chip face).
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.anisotropy = 8;

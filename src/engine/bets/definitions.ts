@@ -118,4 +118,7 @@ export const BET_DEFINITIONS: Readonly<Record<BetDefId, BetDefinition>> = {
   HOP: def({ id: "HOP", needsHop: true }),
   HORN: def({ id: "HORN" }),
   CE: def({ id: "CE" }),
+  ALL_SMALL: def({ id: "ALL_SMALL" }),
+  ALL_TALL: def({ id: "ALL_TALL" }),
+  ALL: def({ id: "ALL" }),
 };

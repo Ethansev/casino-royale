@@ -1,6 +1,6 @@
 "use client";
 
-import { chipStyle } from "@/lib/chips";
+import { chipStyle, formatMoney } from "@/lib/chips";
 
 export const CHIP_R = 21;
 
@@ -38,7 +38,7 @@ export function ChipStack2D({
         fontWeight={800}
         fill={style.text}
       >
-        {amount}
+        {formatMoney(amount)}
       </text>
     </g>
   );

@@ -201,7 +201,21 @@ export function decide(
         },
       ];
 
-      const ctx = { roll, phase: state.phase, point: state.point, config };
+      // Numbers rolled since the last 7 (for Bonus Craps), including this roll.
+      const rolledSince7 = new Set<number>();
+      for (let i = state.rollHistory.length - 1; i >= 0; i--) {
+        if (state.rollHistory[i].total === 7) break;
+        rolledSince7.add(state.rollHistory[i].total);
+      }
+      rolledSince7.add(roll.total);
+
+      const ctx = {
+        roll,
+        phase: state.phase,
+        point: state.point,
+        config,
+        rolledSince7,
+      };
       for (const bet of state.bets) {
         const res = resolveBet(bet, ctx);
         switch (res.kind) {

@@ -20,10 +20,10 @@ export function WinFloaters({ config }: { config: VariantConfig }) {
         return (
           <span
             key={r.key}
-            className="absolute text-xl font-extrabold text-emerald-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] motion-safe:[animation:float-up_1.5s_ease-out_forwards] motion-reduce:opacity-0"
+            className="absolute text-xl font-extrabold text-emerald-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] motion-safe:[animation:float-up_2.4s_ease-out_forwards] motion-reduce:opacity-0"
             style={{
               left: `${(pos.x / BOARD_W) * 100}%`,
-              top: `${(pos.y / BOARD_H) * 100}%`,
+              top: `calc(${(pos.y / BOARD_H) * 100}% - 26px)`,
               animationDelay: `${i * 90}ms`,
             }}
           >

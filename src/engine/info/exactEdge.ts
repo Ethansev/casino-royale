@@ -40,7 +40,13 @@ export function exactEdgePct(
 
     for (const [d1, d2] of ALL_PAIRS) {
       const roll = makeRoll(d1, d2);
-      const r = resolveBet(b, { roll, phase, point, config });
+      const r = resolveBet(b, {
+        roll,
+        phase,
+        point,
+        config,
+        rolledSince7: new Set<number>(),
+      });
       if (r.kind === "WIN") resolved += p * r.profit;
       else if (r.kind === "LOSE") resolved -= p * b.amount;
       else if (r.kind === "PUSH") {
@@ -97,6 +103,13 @@ export function betEdgePct(
     case "PASS":
     case "DONT_PASS":
       return exactEdgePct(bet, config, true, "COME_OUT", null);
+    // Multi-roll accumulation bets the per-roll enumerator can't model;
+    // use published Bonus Craps house edges (as negative EV%).
+    case "ALL_SMALL":
+    case "ALL_TALL":
+      return -7.76;
+    case "ALL":
+      return -7.46;
     case "PASS_ODDS":
     case "DONT_PASS_ODDS":
     case "COME_ODDS":

@@ -2,8 +2,8 @@
 
 import { Html } from "@react-three/drei";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
-import { useEffect } from "react";
-import { Vector3 } from "three";
+import { useEffect, useMemo, useRef } from "react";
+import { Plane, Raycaster, Vector2, Vector3 } from "three";
 import type { VariantConfig } from "@/engine/types";
 import { chipPositionForBet, type BetZone } from "@/lib/betZones";
 import { flyChipSprite } from "@/lib/chipFx";
@@ -18,29 +18,88 @@ export interface FeltPointer {
   clientY: number;
 }
 
-/** Invisible plane over the felt that turns pointer events into board coords. */
+/** Invisible plane over the felt that turns pointer events into board coords.
+ *  Chip drags are driven by window pointer events + a manual screen→felt
+ *  raycast (R3F's own mesh events go deaf once a drag starts, so we can't rely
+ *  on them mid-gesture). */
 export function FeltHitLayer({
   onMove,
   onLeave,
   onTap,
   onRightTap,
+  onDown,
+  onUp,
 }: {
   onMove: (p: FeltPointer) => void;
   onLeave: () => void;
   onTap: (p: FeltPointer) => void;
   onRightTap: (p: FeltPointer) => void;
+  /** Returns true if the press grabbed a chip (starts a drag). */
+  onDown: (p: FeltPointer) => boolean;
+  onUp: (p: FeltPointer | null) => void;
 }) {
+  const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
+  const raycaster = useMemo(() => new Raycaster(), []);
+  const plane = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
+  const draggingRef = useRef(false);
+  const moveRef = useRef(onMove);
+  const upRef = useRef(onUp);
+  moveRef.current = onMove;
+  upRef.current = onUp;
+
   const toPointer = (e: ThreeEvent<PointerEvent | MouseEvent>): FeltPointer => {
     const { bx, by } = feltToBoard(e.point.x, e.point.z);
     return { bx, by, clientX: e.nativeEvent.clientX, clientY: e.nativeEvent.clientY };
   };
 
+  const screenToPointer = (clientX: number, clientY: number): FeltPointer | null => {
+    const rect = gl.domElement.getBoundingClientRect();
+    const ndc = new Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(ndc, camera);
+    const hit = new Vector3();
+    if (!raycaster.ray.intersectPlane(plane, hit)) return null;
+    const { bx, by } = feltToBoard(hit.x, hit.z);
+    return { bx, by, clientX, clientY };
+  };
+
+  useEffect(() => {
+    const onWindowMove = (ev: PointerEvent) => {
+      if (!draggingRef.current) return;
+      const p = screenToPointer(ev.clientX, ev.clientY);
+      if (p) moveRef.current(p);
+    };
+    const onWindowUp = (ev: PointerEvent) => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      upRef.current(screenToPointer(ev.clientX, ev.clientY));
+    };
+    window.addEventListener("pointermove", onWindowMove);
+    window.addEventListener("pointerup", onWindowUp);
+    return () => {
+      window.removeEventListener("pointermove", onWindowMove);
+      window.removeEventListener("pointerup", onWindowUp);
+    };
+    // raycast inputs are stable refs/memos; callbacks are read via refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camera, gl, raycaster, plane]);
+
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, 0.002, 0]}
-      onPointerMove={(e) => onMove(toPointer(e))}
-      onPointerOut={onLeave}
+      onPointerMove={(e) => {
+        if (!draggingRef.current) onMove(toPointer(e));
+      }}
+      onPointerOut={() => {
+        if (!draggingRef.current) onLeave();
+      }}
+      onPointerDown={(e) => {
+        if (onDown(toPointer(e))) draggingRef.current = true;
+      }}
       onClick={(e) => {
         // Ignore clicks that were actually orbit drags.
         if (e.delta > 6) return;
@@ -58,15 +117,27 @@ export function FeltHitLayer({
   );
 }
 
-/** Translucent hover highlight over a zone's rect on the felt. */
-export function ZoneHighlight({ zone }: { zone: BetZone }) {
+/** Themed hover glow over a zone's rect on the felt (3D match for the 2D board). */
+export function ZoneHighlight({ zone, color }: { zone: BetZone; color: string }) {
+  const invalidate = useThree((s) => s.invalidate);
+  // frameloop="demand": request a frame when the highlight mounts/changes.
+  useEffect(() => {
+    invalidate();
+  }, [invalidate, zone, color]);
   if (zone.shape.kind !== "rect") return null;
   const { x, y, w, h } = zone.shape;
+  const pad = 8;
   const c = boardToFelt(x + w / 2, y + h / 2);
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[c.x, 0.004, c.z]}>
-      <planeGeometry args={[w / SCALE, h / SCALE]} />
-      <meshBasicMaterial color="#ffffff" transparent opacity={0.16} depthWrite={false} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[c.x, 0.02, c.z]}>
+      <planeGeometry args={[(w + pad) / SCALE, (h + pad) / SCALE]} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={0.32}
+        depthTest={false}
+        depthWrite={false}
+      />
     </mesh>
   );
 }
@@ -85,9 +156,9 @@ export function WinFloaters3D({ config }: { config: VariantConfig }) {
         if (!pos) return null;
         const { x, z } = boardToFelt(pos.x, pos.y);
         return (
-          <Html key={r.key} position={[x, 0.25, z]} center zIndexRange={[30, 20]}>
+          <Html key={r.key} position={[x, 0.7, z]} center zIndexRange={[30, 20]}>
             <span
-              className="whitespace-nowrap text-xl font-extrabold text-emerald-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] motion-safe:[animation:float-up_1.5s_ease-out_forwards] motion-reduce:opacity-0"
+              className="whitespace-nowrap text-xl font-extrabold text-emerald-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] motion-safe:[animation:float-up_2.4s_ease-out_forwards] motion-reduce:opacity-0"
               style={{ animationDelay: `${i * 90}ms` }}
             >
               +{formatMoney(r.profit)}

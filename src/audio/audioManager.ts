@@ -101,6 +101,31 @@ export const sounds = {
     const notes = [659, 880, 1047, 1318];
     notes.forEach((f, i) => tone(f, 0.16, 0.22, i * 0.09));
   },
+  celebrate() {
+    // A short triumphant jingle: I–IV–V–I chord pad under a rising melody,
+    // capped with a sparkle shimmer.
+    const chord = (freqs: number[], dur: number, delay: number) =>
+      freqs.forEach((f) => tone(f, dur, 0.09, delay, "triangle"));
+    chord([262, 330, 392], 0.5, 0); // C
+    chord([349, 440, 523], 0.5, 0.45); // F
+    chord([392, 494, 587], 0.55, 0.9); // G
+    chord([523, 659, 784], 1.0, 1.35); // C (resolve, held)
+
+    const melody: ReadonlyArray<readonly [number, number]> = [
+      [659, 0],
+      [784, 0.22],
+      [1047, 0.45],
+      [1319, 0.7],
+      [1568, 1.0],
+      [1047, 1.3],
+      [1319, 1.5],
+      [1568, 1.8],
+    ];
+    melody.forEach(([f, d]) => tone(f, 0.22, 0.18, d, "sine"));
+
+    // Sparkle shimmer tail.
+    for (let i = 0; i < 10; i++) tone(1568 + i * 120, 0.12, 0.06, 1.9 + i * 0.05);
+  },
   lose() {
     tone(220, 0.18, 0.12, 0, "sawtooth");
     tone(165, 0.25, 0.1, 0.12, "sawtooth");

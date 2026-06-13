@@ -35,6 +35,19 @@ body {
   color: var(--mr-text);
 }
 
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+label[for],
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* L0 — ambient overhead spotlight + edge vignette behind everything */
 body::before {
   content: "";
@@ -99,13 +112,17 @@ body::before {
     opacity: 0;
     transform: translate(-50%, 8px) scale(0.8);
   }
-  15% {
+  10% {
     opacity: 1;
     transform: translate(-50%, 0) scale(1);
   }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -44px) scale(1.05);
+  }
   100% {
     opacity: 0;
-    transform: translate(-50%, -64px) scale(1.05);
+    transform: translate(-50%, -72px) scale(1.05);
   }
 }
 
@@ -127,6 +144,94 @@ body::before {
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes win-banner-drop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -160%) scale(0.8);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, 8%) scale(1.08);
+  }
+  26% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  82% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.98);
+  }
+}
+
+@keyframes win-dim {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes win-card-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  24% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+}
+
+@keyframes coin-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-12vh) rotateZ(0deg);
+  }
+  8% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(82vh) rotateZ(360deg);
+  }
+}
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(90deg);
   }
 }
 

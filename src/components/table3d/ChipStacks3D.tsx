@@ -1,11 +1,13 @@
 "use client";
 
 import { Html } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
+import { useEffect } from "react";
 import { BET_DEFINITIONS } from "@/engine/bets/definitions";
 import { isWorking } from "@/engine/bets/resolvers";
 import type { BetInstance, EngineState, VariantConfig } from "@/engine/types";
 import { chipPositionForBet } from "@/lib/betZones";
-import { chipStyle } from "@/lib/chips";
+import { chipStyle, formatMoney } from "@/lib/chips";
 import { setWorking } from "@/store/engineBridge";
 import { useGameStore, YOU } from "@/store/gameStore";
 import { useTheme } from "@/store/uiStore";
@@ -14,6 +16,56 @@ import { boardToFelt } from "./coords";
 
 const CHIP_R = 0.19;
 const CHIP_H = 0.045;
+
+/** Billboarded amount label that floats above a chip stack. */
+function AmountPill({ amount, y = 0.3 }: { amount: number; y?: number }) {
+  return (
+    <Html position={[0, y, 0]} center zIndexRange={[24, 14]}>
+      <span className="whitespace-nowrap rounded-full bg-black/75 px-2 py-0.5 text-xs font-bold text-white ring-1 ring-white/20">
+        {formatMoney(amount)}
+      </span>
+    </Html>
+  );
+}
+
+/** A single chip lifted off the felt that tracks the cursor during a drag. */
+export function DraggedChip3D({
+  amount,
+  bx,
+  by,
+}: {
+  amount: number;
+  bx: number;
+  by: number;
+}) {
+  const theme = useTheme();
+  const invalidate = useThree((s) => s.invalidate);
+  const { x, z } = boardToFelt(bx, by);
+  // frameloop="demand": repaint as the lifted chip moves with the cursor.
+  useEffect(() => {
+    invalidate();
+  }, [invalidate, bx, by]);
+  const style = chipStyle(amount);
+  return (
+    <group position={[x, 0.34, z]} rotation={[0, Math.PI / 2, 0]} scale={1.1}>
+      <mesh castShadow>
+        <cylinderGeometry args={[CHIP_R, CHIP_R, CHIP_H, 32]} />
+        <meshStandardMaterial
+          attach="material-0"
+          map={chipEdgeTexture(amount)}
+          roughness={0.4}
+        />
+        <meshStandardMaterial
+          attach="material-1"
+          map={chipTopTexture(amount, theme)}
+          roughness={0.35}
+        />
+        <meshStandardMaterial attach="material-2" color={style.fill} roughness={0.45} />
+      </mesh>
+      <AmountPill amount={amount} y={0.42} />
+    </group>
+  );
+}
 
 function WorkingPill({
   bet,
@@ -47,7 +99,13 @@ function WorkingPill({
   );
 }
 
-export function ChipStacks3D({ config }: { config: VariantConfig }) {
+export function ChipStacks3D({
+  config,
+  dragKey,
+}: {
+  config: VariantConfig;
+  dragKey?: string | null;
+}) {
   const bets = useGameStore((s) => s.snapshot?.bets);
   const phase = useGameStore((s) => s.snapshot?.phase ?? "COME_OUT");
   const theme = useTheme();
@@ -65,8 +123,14 @@ export function ChipStacks3D({ config }: { config: VariantConfig }) {
           const layers = Math.min(5, Math.max(1, Math.floor(bet.amount / 5)));
           const style = chipStyle(bet.amount);
           const edge = chipEdgeTexture(bet.amount);
+          // While dragging, the lifted ghost chip stands in for this stack.
+          if (bet.key === dragKey) return null;
           return (
-            <group key={`${bet.key}|${theme.id}`} position={[x, 0, z]}>
+            <group
+              key={`${bet.key}|${theme.id}`}
+              position={[x, 0, z]}
+              rotation={[0, Math.PI / 2, 0]}
+            >
               {Array.from({ length: layers }, (_, i) => {
                 const top = i === layers - 1;
                 return (
@@ -102,6 +166,7 @@ export function ChipStacks3D({ config }: { config: VariantConfig }) {
                   </mesh>
                 );
               })}
+              <AmountPill amount={bet.amount} />
               <WorkingPill bet={bet} phase={phase} />
             </group>
           );

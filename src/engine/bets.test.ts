@@ -23,6 +23,7 @@ function ctx(
     phase: over.phase ?? "POINT_ON",
     point: over.point ?? 8,
     config: over.config ?? STANDARD,
+    rolledSince7: over.rolledSince7 ?? new Set<number>(),
   };
 }
 

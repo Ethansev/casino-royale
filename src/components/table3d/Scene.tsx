@@ -2,10 +2,11 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useEffect, useRef, type ComponentRef } from "react";
+import { useEffect, type ComponentRef, type RefObject } from "react";
 import { useTheme } from "@/store/uiStore";
 
 export type CameraPreset = "shooter" | "overhead" | "corner";
+export type OrbitControlsRef = RefObject<ComponentRef<typeof OrbitControls> | null>;
 
 const PRESETS: Readonly<
   Record<CameraPreset, { position: [number, number, number]; target: [number, number, number] }>
@@ -15,8 +16,14 @@ const PRESETS: Readonly<
   corner: { position: [4.8, 3.4, 4.2], target: [0, 0, 0] },
 };
 
-export function Scene({ preset }: { preset: CameraPreset }) {
-  const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
+export function Scene({
+  preset,
+  controlsRef,
+}: {
+  preset: CameraPreset;
+  controlsRef: OrbitControlsRef;
+}) {
+  const controls = controlsRef;
   const camera = useThree((s) => s.camera);
   const invalidate = useThree((s) => s.invalidate);
 

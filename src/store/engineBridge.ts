@@ -13,6 +13,7 @@ import {
   type Variant,
 } from "@/engine/types";
 import { useGameStore, YOU } from "./gameStore";
+import { useStatsStore } from "./statsStore";
 
 const BANKROLL_KEY = "craps-bankroll";
 const DEFAULT_BANKROLL = 1000;
@@ -122,6 +123,10 @@ export function startSession(variant: Variant, oddsPolicy: OddsPolicy): void {
   useGameStore.setState({
     rolling: false,
     lastRoll: null,
+    pendingRoll: null,
+    lastResolutions: [],
+    winTotal: 0,
+    fxSeq: 0,
     banner:
       variant === "crapless"
         ? "Welcome to crapless craps — you can't crap out here!"
@@ -133,7 +138,16 @@ export function startSession(variant: Variant, oddsPolicy: OddsPolicy): void {
 export function endSession(): void {
   persistBankroll();
   engine = null;
-  useGameStore.setState({ snapshot: null, lastRoll: null, rolling: false, error: null });
+  useGameStore.setState({
+    snapshot: null,
+    lastRoll: null,
+    rolling: false,
+    error: null,
+    pendingRoll: null,
+    lastResolutions: [],
+    winTotal: 0,
+    fxSeq: 0,
+  });
 }
 
 export function getEngineConfig() {
@@ -179,6 +193,7 @@ export function addCredits(amount = 1000): void {
   if (!engine) return;
   try {
     engine.dispatch({ type: "ADD_FUNDS", playerId: YOU, amount });
+    useStatsStore.getState().recordTopUp(amount);
     sounds.chipCascade();
     sync();
   } catch (e) {
@@ -203,6 +218,24 @@ export function clearLastBets(): void {
   }
   placedThisWindow = [];
   sounds.chip();
+  sync();
+}
+
+/** Take down every bet of mine that can come down (contract bets stay). */
+export function clearAllBets(): void {
+  if (!engine || useGameStore.getState().rolling) return;
+  const mine = engine.getState().bets.filter((b) => b.playerId === YOU);
+  let removed = false;
+  for (const bet of mine) {
+    try {
+      engine.dispatch({ type: "REMOVE_BET", playerId: YOU, key: bet.key });
+      removed = true;
+    } catch {
+      // contract bets can't come down — leave them
+    }
+  }
+  placedThisWindow = [];
+  if (removed) sounds.chip();
   sync();
 }
 
@@ -388,6 +421,17 @@ export function roll(): void {
         fxSeq: s.fxSeq + 1,
       }));
       persistBankroll();
+      if (resolutions.length > 0) {
+        useStatsStore.getState().recordRound({
+          game: snapshot.variant,
+          wager: resolutions.reduce((sum, r) => sum + r.staked, 0),
+          net: resolutions.reduce((sum, r) => sum + r.profit, 0),
+          biggestProfit: resolutions.reduce(
+            (max, r) => Math.max(max, r.profit),
+            0,
+          ),
+        });
+      }
       sounds.diceLand();
       playOutcomeSounds(events);
       speak(banner);
@@ -433,8 +477,7 @@ function playOutcomeSounds(events: readonly GameEvent[]): void {
   else if (pointMade) sounds.pointMade();
   if (myProfit > 0) {
     sounds.chipCascade();
-    if (myProfit >= 50) sounds.bigWin();
-    else sounds.win();
+    sounds.celebrate();
   } else if (myProfit < 0 && !sevenOut) {
     sounds.lose();
   }

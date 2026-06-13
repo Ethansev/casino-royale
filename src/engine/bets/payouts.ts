@@ -33,6 +33,15 @@ export const TWELVE_PAYOUT: Ratio = { num: 30, den: 1 };
 export const HOP_EASY_PAYOUT: Ratio = { num: 15, den: 1 };
 export const HOP_HARD_PAYOUT: Ratio = { num: 30, den: 1 };
 
+// Bonus Craps: roll the whole set before a 7.
+export const ALL_SMALL_PAYOUT: Ratio = { num: 34, den: 1 };
+export const ALL_TALL_PAYOUT: Ratio = { num: 34, den: 1 };
+export const ALL_PAYOUT: Ratio = { num: 175, den: 1 };
+
+export const SMALL_NUMBERS: readonly number[] = [2, 3, 4, 5, 6];
+export const TALL_NUMBERS: readonly number[] = [8, 9, 10, 11, 12];
+export const ALL_NUMBERS: readonly number[] = [...SMALL_NUMBERS, ...TALL_NUMBERS];
+
 /**
  * Max odds as a multiple of the flat bet. Crapless extra points (2,3,11,12)
  * have no 3-4-5x convention; we use 5x, a common house choice.

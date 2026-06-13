@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "@/lib/chips";
-import { useGameStore, useMyBankroll, useMyTotalOnFelt } from "@/store/gameStore";
+import { useMyBankroll, useMyTotalOnFelt } from "@/store/gameStore";
 
 /** The value itself updates instantly; only a short color flash marks the change. */
 function useChangeFlash(value: number): "up" | "down" | null {
@@ -24,6 +24,9 @@ function useChangeFlash(value: number): "up" | "down" | null {
   return flash;
 }
 
+// Shared size so Credits and On-the-felt read at the same scale.
+const VALUE_SIZE = "clamp(22px, 2.1vw, 28px)";
+
 function Stat({
   label,
   value,
@@ -38,15 +41,15 @@ function Stat({
   return (
     <div className="px-4 py-1 text-right">
       <div
-        className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+        className="text-[11px] font-semibold uppercase tracking-[0.18em]"
         style={{ color: "var(--mr-dim)" }}
       >
         {label}
       </div>
       <div
         data-testid={testId}
-        className="text-lg font-semibold tabular-nums"
-        style={{ color }}
+        className="font-marquee font-bold tabular-nums"
+        style={{ color, fontSize: VALUE_SIZE, lineHeight: 1.05 }}
       >
         {value}
       </div>
@@ -58,7 +61,6 @@ function Stat({
 export function TopMeters() {
   const bankroll = useMyBankroll();
   const onFelt = useMyTotalOnFelt();
-  const winTotal = useGameStore((s) => s.winTotal);
   const flash = useChangeFlash(bankroll);
 
   const creditColor =
@@ -81,7 +83,7 @@ export function TopMeters() {
           data-testid="bankroll"
           className="font-marquee font-bold tabular-nums transition-colors"
           style={{
-            fontSize: "clamp(28px, 3vw, 40px)",
+            fontSize: VALUE_SIZE,
             lineHeight: 1.05,
             color: creditColor,
             textShadow: "0 0 18px var(--mr-glow)",
@@ -91,12 +93,7 @@ export function TopMeters() {
         </div>
       </div>
 
-      <div className="flex items-stretch divide-x divide-white/10 rounded-full bg-black/25 ring-1 ring-white/10">
-        <Stat
-          label="Last win"
-          value={formatMoney(winTotal)}
-          color={winTotal > 0 ? "var(--mr-up)" : "var(--mr-dim)"}
-        />
+      <div className="flex items-stretch rounded-full bg-black/25 ring-1 ring-white/10">
         <Stat
           label="On the felt"
           value={formatMoney(onFelt)}

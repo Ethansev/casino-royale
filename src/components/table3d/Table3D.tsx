@@ -1,19 +1,26 @@
 "use client";
 
+import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import { useRef, useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { getBetInfo } from "@/engine/info/betInfo";
 import type { BetInstance } from "@/engine/types";
 import { BetInfoCard } from "@/components/hud/BetInfoCard";
 import { BetTooltip } from "@/components/hud/BetTooltip";
 import { HopPicker } from "@/components/hud/HopPicker";
-import { chipPositionForBet, zoneAtBoardPoint, type BetZone } from "@/lib/betZones";
+import {
+  BOARD_H,
+  BOARD_W,
+  chipPositionForBet,
+  zoneAtBoardPoint,
+  type BetZone,
+} from "@/lib/betZones";
 import { zoneEnabled } from "@/lib/zoneRules";
-import { getEngineConfig, placeBet, removeBet } from "@/store/engineBridge";
+import { getEngineConfig, moveBet, placeBet, removeBet } from "@/store/engineBridge";
 import { useGameStore, YOU } from "@/store/gameStore";
 import { useTheme, useUiStore } from "@/store/uiStore";
-import { ChipStacks3D } from "./ChipStacks3D";
+import { ChipStacks3D, DraggedChip3D } from "./ChipStacks3D";
 import { Dice3D } from "./Dice3D";
 import {
   DevProjectionHook,
@@ -40,6 +47,17 @@ export default function Table3D() {
   );
   const [infoZone, setInfoZone] = useState<BetZone | null>(null);
   const [hopOpen, setHopOpen] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragPos, setDragPos] = useState<{ bx: number; by: number } | null>(null);
+  const [overChip, setOverChip] = useState(false);
+  const dragRef = useRef<{
+    bet: BetInstance;
+    startX: number;
+    startY: number;
+    active: boolean;
+  } | null>(null);
+  const orbitRef = useRef<ComponentRef<typeof OrbitControls>>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const snapshot = useGameStore((s) => s.snapshot);
   const helpMode = useUiStore((s) => s.helpMode);
@@ -57,11 +75,24 @@ export default function Table3D() {
   };
 
   const handleMove = (p: FeltPointer) => {
+    const drag = dragRef.current;
+    if (drag && !drag.active) {
+      const moved = Math.hypot(p.clientX - drag.startX, p.clientY - drag.startY);
+      if (moved > 8) {
+        drag.active = true;
+        setDragging(true);
+        setDragKey(drag.bet.key);
+      }
+    }
+    // Lifted ghost chip tracks the cursor (even off the board) while dragging.
+    if (drag?.active) setDragPos({ bx: p.bx, by: p.by });
     const zone = zoneAtBoardPoint(config, p.bx, p.by);
     if (!zone) {
       setHover(null);
+      if (!drag) setOverChip(false);
       return;
     }
+    if (!drag) setOverChip(myChipAt(p.bx, p.by) !== null);
     const { x, y } = toLocal(p.clientX, p.clientY);
     setHover({ zone, x, y });
   };
@@ -123,15 +154,69 @@ export default function Table3D() {
     if (chip) removeBet(chip.key);
   };
 
+  // Press a chip to start a drag; releasing over another zone moves the bet,
+  // or off the board takes it down. Returns true when a chip was grabbed.
+  const handleDown = (p: FeltPointer): boolean => {
+    if (helpMode) return false;
+    const chip = myChipAt(p.bx, p.by);
+    if (!chip) return false;
+    dragRef.current = {
+      bet: chip,
+      startX: p.clientX,
+      startY: p.clientY,
+      active: false,
+    };
+    // Suspend camera orbit the instant a chip is grabbed, before any drag.
+    if (orbitRef.current) orbitRef.current.enabled = false;
+    setDragging(true);
+    return true;
+  };
+
+  const handleUp = (p: FeltPointer | null) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag?.active && p) {
+      const offBoard =
+        p.bx < 0 || p.bx > BOARD_W || p.by < 0 || p.by > BOARD_H;
+      if (offBoard) {
+        removeBet(drag.bet.key);
+      } else {
+        const target = zoneAtBoardPoint(config, p.bx, p.by);
+        if (
+          target &&
+          zoneEnabled(target, snapshot, config, YOU) &&
+          (target.defId !== drag.bet.defId || target.number !== drag.bet.number)
+        ) {
+          moveBet(drag.bet.key, target.defId, target.number);
+        }
+      }
+    }
+    if (orbitRef.current) orbitRef.current.enabled = true;
+    setDragging(false);
+    setDragKey(null);
+    setDragPos(null);
+  };
+
   const showHighlight =
     hover && (helpMode || zoneEnabled(hover.zone, snapshot, config, YOU));
+  const draggedBet = dragKey
+    ? snapshot.bets.find((b) => b.key === dragKey)
+    : undefined;
 
   return (
     <div
       ref={containerRef}
       onContextMenu={(e) => e.preventDefault()}
       className={`relative h-[68vh] w-full select-none overflow-hidden rounded-3xl bg-black shadow-2xl ${
-        helpMode ? "cursor-help" : ""
+        helpMode
+          ? "cursor-help"
+          : dragging
+            ? "cursor-grabbing"
+            : overChip
+              ? "cursor-grab"
+              : hover
+                ? "cursor-pointer"
+                : ""
       }`}
     >
       <Canvas
@@ -140,9 +225,9 @@ export default function Table3D() {
         frameloop="demand"
         camera={{ fov: 45, position: [0, 8.2, 0.01] }}
       >
-        <Scene preset={preset} />
+        <Scene preset={preset} controlsRef={orbitRef} />
         <TableModel config={config} />
-        <ChipStacks3D config={config} />
+        <ChipStacks3D config={config} dragKey={dragKey} />
         <PointPuck3D config={config} />
         <Dice3D />
         <FeltHitLayer
@@ -150,8 +235,19 @@ export default function Table3D() {
           onLeave={() => setHover(null)}
           onTap={handleTap}
           onRightTap={handleRightTap}
+          onDown={handleDown}
+          onUp={handleUp}
         />
-        {showHighlight && <ZoneHighlight zone={hover.zone} />}
+        {showHighlight && (
+          <ZoneHighlight zone={hover.zone} color={theme.css.accent} />
+        )}
+        {draggedBet && dragPos && (
+          <DraggedChip3D
+            amount={draggedBet.amount}
+            bx={dragPos.bx}
+            by={dragPos.by}
+          />
+        )}
         <WinFloaters3D config={config} />
         <FlyingChipsLauncher config={config} />
         <DevProjectionHook />

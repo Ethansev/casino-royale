@@ -47,7 +47,10 @@ export type BetDefId =
   | "TWELVE"
   | "HOP"
   | "HORN"
-  | "CE";
+  | "CE"
+  | "ALL_SMALL"
+  | "ALL_TALL"
+  | "ALL";
 
 export interface BetInstance {
   /** Unique per player, e.g. "PASS", "PLACE:6", "COME:8", "HOP:2-5". */

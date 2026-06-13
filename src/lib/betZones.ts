@@ -417,9 +417,41 @@ function numberStripZones(config: VariantConfig): BetZone[] {
   return zones;
 }
 
+/** Bonus Craps row across the very top of the felt (both variants). */
+function bonusZones(): BetZone[] {
+  const specs: ReadonlyArray<{ id: BetDefId; label: string; pays: string }> = [
+    { id: "ALL_SMALL", label: "ALL SMALL", pays: "PAYS 34 : 1" },
+    { id: "ALL_TALL", label: "ALL TALL", pays: "PAYS 34 : 1" },
+    { id: "ALL", label: "ALL", pays: "PAYS 175 : 1" },
+  ];
+  const gap = 12;
+  const w = (MAIN_W - 2 * gap) / 3;
+  const y = 2;
+  const h = 40;
+  return specs.map((s, i) => {
+    const x = MAIN_X + i * (w + gap);
+    const cx = x + w / 2;
+    return {
+      id: s.id,
+      defId: s.id,
+      shape: rect(x, y, w, h, 8),
+      label: s.label,
+      labelX: cx,
+      labelY: y + 17,
+      fontSize: 16,
+      labelColor: BLUE,
+      aria: s.label,
+      anchorX: cx,
+      anchorY: y + h / 2,
+      extraText: [{ text: s.pays, x: cx, y: y + 33, size: 11, opacity: 0.85 }],
+    };
+  });
+}
+
 export function zonesFor(config: VariantConfig): BetZone[] {
   const dont = config.dontBetsAllowed;
   const zones: BetZone[] = [
+    ...bonusZones(),
     ...hardwaysZones(),
     ...oneRollZones(),
     ...numberStripZones(config),

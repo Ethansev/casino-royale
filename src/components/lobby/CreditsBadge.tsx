@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { formatMoney } from "@/lib/chips";
+import { useStatsStore } from "@/store/statsStore";
 
 const KEY = "craps-bankroll";
 const EVENT = "craps-credits";
@@ -32,6 +33,7 @@ export function CreditsBadge({ className = "" }: { className?: string }) {
       onClick={() => {
         window.localStorage.setItem(KEY, String(parse(raw) + 1000));
         window.dispatchEvent(new Event(EVENT));
+        useStatsStore.getState().recordTopUp(1000);
       }}
       onMouseDown={(e) => e.preventDefault()}
       title="Tap to top up $1,000 (testing)"

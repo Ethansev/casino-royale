@@ -1,7 +1,12 @@
 "use client";
 
 import { chipStyle } from "@/lib/chips";
-import { clearLastBets, doubleBets, repeatLastBets } from "@/store/engineBridge";
+import {
+  clearAllBets,
+  clearLastBets,
+  doubleBets,
+  repeatLastBets,
+} from "@/store/engineBridge";
 import { useGameStore } from "@/store/gameStore";
 import { CHIP_DENOMS, useUiStore } from "@/store/uiStore";
 
@@ -38,6 +43,7 @@ export function ChipTray() {
   return (
     <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5">
       <TrayButton label="Clear" sub="last bet" onClick={clearLastBets} disabled={rolling} />
+      <TrayButton label="Take Down" sub="all bets" onClick={clearAllBets} disabled={rolling} />
       <div
         className="flex flex-wrap items-center justify-center gap-1.5"
         role="radiogroup"

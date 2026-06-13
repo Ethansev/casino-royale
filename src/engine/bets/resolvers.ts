@@ -1,12 +1,18 @@
 import type { BetInstance, Phase, Roll, VariantConfig } from "../types";
 import {
   ACES_PAYOUT,
+  ALL_NUMBERS,
+  ALL_PAYOUT,
+  ALL_SMALL_PAYOUT,
+  ALL_TALL_PAYOUT,
   ANY_CRAPS_PAYOUT,
   ANY_SEVEN_PAYOUT,
   EVEN,
   HARDWAY_PAYOUT,
   HOP_EASY_PAYOUT,
   HOP_HARD_PAYOUT,
+  SMALL_NUMBERS,
+  TALL_NUMBERS,
   THREE_PAYOUT,
   TWELVE_PAYOUT,
   VIG_RATE,
@@ -20,6 +26,8 @@ export interface ResolveCtx {
   phase: Phase;
   point: number | null;
   config: VariantConfig;
+  /** Totals rolled since the last 7 (includes the current roll). */
+  rolledSince7: ReadonlySet<number>;
 }
 
 export type Resolution =
@@ -54,7 +62,7 @@ export function isWorking(bet: BetInstance, phase: Phase): boolean {
 }
 
 export function resolveBet(bet: BetInstance, ctx: ResolveCtx): Resolution {
-  const { roll, phase, point, config } = ctx;
+  const { roll, phase, point, config, rolledSince7 } = ctx;
   const t = roll.total;
   const amount = bet.amount;
   const working = isWorking(bet, phase);
@@ -240,6 +248,27 @@ export function resolveBet(bet: BetInstance, ctx: ResolveCtx): Resolution {
         return win(profitFor(half, ANY_CRAPS_PAYOUT) - half);
       if (t === 11) return win(profitFor(half, YO_PAYOUT) - half);
       return LOSE;
+    }
+
+    case "ALL_SMALL": {
+      if (t === 7) return LOSE;
+      return SMALL_NUMBERS.every((n) => rolledSince7.has(n))
+        ? win(profitFor(amount, ALL_SMALL_PAYOUT))
+        : NONE;
+    }
+
+    case "ALL_TALL": {
+      if (t === 7) return LOSE;
+      return TALL_NUMBERS.every((n) => rolledSince7.has(n))
+        ? win(profitFor(amount, ALL_TALL_PAYOUT))
+        : NONE;
+    }
+
+    case "ALL": {
+      if (t === 7) return LOSE;
+      return ALL_NUMBERS.every((n) => rolledSince7.has(n))
+        ? win(profitFor(amount, ALL_PAYOUT))
+        : NONE;
     }
   }
 }

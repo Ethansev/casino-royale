@@ -4,7 +4,9 @@ import { THEMES, type Theme, type ThemeId } from "@/lib/themes";
 
 export type ViewMode = "2d" | "3d";
 
-export const CHIP_DENOMS: readonly number[] = [1, 2, 3, 5, 10, 25, 50, 100];
+export const CHIP_DENOMS: readonly number[] = [
+  1, 2, 3, 5, 10, 25, 50, 100, 500, 1000, 5000,
+];
 
 interface UiStore {
   viewMode: ViewMode;

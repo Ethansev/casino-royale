@@ -19,7 +19,7 @@ import {
   zonesFor,
   type BetZone,
 } from "@/lib/betZones";
-import { chipStyle } from "@/lib/chips";
+import { chipStyle, formatMoney } from "@/lib/chips";
 import {
   getEngineConfig,
   moveBet,
@@ -574,20 +574,18 @@ export function Table2D() {
         <defs>
           <radialGradient id="board-vignette" cx="50%" cy="42%" r="75%">
             <stop offset="58%" stopColor="black" stopOpacity="0" />
-            <stop offset="100%" stopColor="black" stopOpacity="0.34" />
+            <stop offset="100%" stopColor="black" stopOpacity="0.2" />
           </radialGradient>
           <filter id="board-grain">
             <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" />
           </filter>
           <filter id="zone-inset" x="-20%" y="-20%" width="140%" height="140%">
-            <feComponentTransfer in="SourceAlpha">
-              <feFuncA type="table" tableValues="1 0" />
-            </feComponentTransfer>
-            <feGaussianBlur stdDeviation="5" />
-            <feOffset dx="0" dy="3" result="inset" />
-            <feFlood floodColor="black" floodOpacity="0.55" />
-            <feComposite in2="inset" operator="in" />
-            <feComposite in2="SourceGraphic" operator="over" />
+            <feOffset dx="0" dy="3" />
+            <feGaussianBlur stdDeviation="3" result="ob" />
+            <feComposite in="SourceGraphic" in2="ob" operator="out" result="inverse" />
+            <feFlood floodColor="black" floodOpacity="0.45" result="c" />
+            <feComposite in="c" in2="inverse" operator="in" result="shadow" />
+            <feComposite in="shadow" in2="SourceGraphic" operator="over" />
           </filter>
         </defs>
         {boardDecorFor(config).map((d, i) => (
@@ -641,7 +639,7 @@ export function Table2D() {
           width={BOARD_W}
           height={BOARD_H}
           filter="url(#board-grain)"
-          opacity={0.05}
+          opacity={0.025}
           pointerEvents="none"
           style={{ mixBlendMode: "overlay" }}
         />
@@ -670,7 +668,7 @@ export function Table2D() {
             color: chipStyle(drag.amount).text,
           }}
         >
-          {drag.amount}
+          {formatMoney(drag.amount)}
         </div>
       )}
       {hover && !infoZone && !hopOpen && (
