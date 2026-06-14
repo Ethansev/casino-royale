@@ -46,7 +46,7 @@ export const useUiStore = create<UiStore>()(
       toggleDealerVoice: () => set((s) => ({ dealerVoice: !s.dealerVoice })),
       toggleTooltips: () => set((s) => ({ showTooltips: !s.showTooltips })),
     }),
-    // v3: ChipCircle rebrand — Circle Pop becomes the default theme
+    // v3: rebrand — Circle Pop becomes the default theme
     { name: "craps-ui-v3" },
   ),
 );

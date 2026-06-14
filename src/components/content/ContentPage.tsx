@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChipEmblem } from "@/components/ChipEmblem";
+import { BRAND, Wordmark } from "@/components/Brand";
 
 const GLASS =
   "rounded-2xl border border-[var(--mr-border)] bg-[var(--mr-surface)] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md";
@@ -34,7 +35,7 @@ export function ContentPage({
             className="flex items-center gap-2.5 font-marquee text-2xl font-extrabold tracking-tight transition hover:opacity-90"
           >
             <ChipEmblem size={30} />
-            Chip<span style={{ color: "var(--mr-accent)" }}>Circle</span>
+            <Wordmark />
           </Link>
           <Link
             href="/"
@@ -73,7 +74,7 @@ export function ContentPage({
           className="pb-2 text-center text-xs"
           style={{ color: "var(--mr-dim)" }}
         >
-          ChipCircle is a free social casino — no real-money play, just bragging
+          {BRAND} is a free social casino — no real-money play, just bragging
           rights.
         </footer>
       </div>

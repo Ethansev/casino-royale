@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Baloo_2, Inter } from "next/font/google";
+import { BRAND } from "@/components/Brand";
 import { ThemeShell } from "@/components/ThemeShell";
 import "./globals.css";
 
@@ -7,7 +8,7 @@ const display = Baloo_2({ subsets: ["latin"], variable: "--font-display" });
 const ui = Inter({ subsets: ["latin"], variable: "--font-ui" });
 
 export const metadata: Metadata = {
-  title: "ChipCircle — Social Casino",
+  title: `${BRAND} — Social Casino`,
   description:
     "Free social casino. Craps with real physics dice and real odds — more games on the way.",
 };

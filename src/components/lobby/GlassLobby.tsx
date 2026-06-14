@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { ChipEmblem } from "@/components/ChipEmblem";
+import { BRAND, Wordmark } from "@/components/Brand";
 import { CreditsBadge } from "./CreditsBadge";
 import { CATEGORY_LABELS, GAMES, type GameCategory } from "./games";
 
@@ -114,7 +115,7 @@ export function GlassLobby() {
         <header className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="flex items-center gap-2.5 font-marquee text-2xl font-extrabold tracking-tight">
             <ChipEmblem size={30} />
-            Chip<span style={{ color: "var(--mr-accent)" }}>Circle</span>
+            <Wordmark />
           </h1>
           <div className={`px-4 py-1 ${GLASS}`}>
             <CreditsBadge className="text-[var(--mr-accent)]" />
@@ -218,7 +219,7 @@ export function GlassLobby() {
             <div className="col-span-2 flex flex-col gap-3 sm:col-span-1">
               <h2 className="flex items-center gap-2 font-marquee text-lg font-extrabold">
                 <ChipEmblem size={24} />
-                Chip<span style={{ color: "var(--mr-accent)" }}>Circle</span>
+                <Wordmark />
               </h2>
               <p
                 className="max-w-xs text-xs leading-relaxed"
@@ -269,10 +270,10 @@ export function GlassLobby() {
             style={{ color: "var(--mr-dim)" }}
           >
             <span>
-              ChipCircle is a free social casino — no real-money play, just
+              {BRAND} is a free social casino — no real-money play, just
               bragging rights.
             </span>
-            <span>© {new Date().getFullYear()} ChipCircle</span>
+            <span>© {new Date().getFullYear()} {BRAND}</span>
           </div>
         </footer>
       </div>

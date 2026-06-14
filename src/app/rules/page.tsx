@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BRAND } from "@/components/Brand";
 import { ContentPage } from "@/components/content/ContentPage";
 
 export const metadata: Metadata = {
-  title: "How to Play — ChipCircle",
-  description:
-    "Learn the games at ChipCircle, starting with craps: the pass line, points, and free odds.",
+  title: `How to Play — ${BRAND}`,
+  description: `Learn the games at ${BRAND}, starting with craps: the pass line, points, and free odds.`,
 };
 
 export default function RulesPage() {

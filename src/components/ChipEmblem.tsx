@@ -1,4 +1,4 @@
-/** The ChipCircle logo mark — a casino chip drawn in CSS, themed by tokens. */
+/** The CoinLounge chip emblem — a casino chip drawn in CSS, themed by tokens. */
 export function ChipEmblem({ size = 26 }: { size?: number }) {
   return (
     <span

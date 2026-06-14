@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Variant } from "@/engine/types";
+import { BRAND } from "./Brand";
 import { ChipEmblem } from "./ChipEmblem";
 import { ChipTray } from "./hud/ChipTray";
 import { DealerBanner } from "./hud/DealerBanner";
@@ -123,7 +124,7 @@ export default function GameRoot({ variant }: { variant: Variant }) {
           </Link>
           <span className="flex items-center gap-2 font-marquee text-lg font-bold tracking-[0.12em]">
             <ChipEmblem size={22} />
-            CHIPCIRCLE
+            {BRAND.toUpperCase()}
             <span style={{ color: "var(--mr-dim)" }}>
               · {variant === "crapless" ? "CRAPLESS" : "CRAPS"}
             </span>

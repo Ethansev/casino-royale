@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChipEmblem } from "@/components/ChipEmblem";
+import { Wordmark } from "@/components/Brand";
 import { CreditsBadge } from "@/components/lobby/CreditsBadge";
 import { formatMoney } from "@/lib/chips";
 import { useStatsStore } from "@/store/statsStore";
@@ -89,7 +90,7 @@ export default function ProfilePage() {
             className="flex items-center gap-2.5 font-marquee text-2xl font-extrabold tracking-tight transition hover:opacity-90"
           >
             <ChipEmblem size={30} />
-            Chip<span style={{ color: "var(--mr-accent)" }}>Circle</span>
+            <Wordmark />
           </Link>
           <Link
             href="/"
