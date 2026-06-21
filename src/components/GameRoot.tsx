@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { Variant } from "@/engine/types";
 import { BRAND } from "./Brand";
 import { ChipEmblem } from "./ChipEmblem";
+import { PresenceHeartbeat } from "./PresenceHeartbeat";
 import { ChipTray } from "./hud/ChipTray";
 import { DealerBanner } from "./hud/DealerBanner";
 import { FlyingChips } from "./hud/FlyingChips";
@@ -112,6 +113,7 @@ export default function GameRoot({ variant }: { variant: Variant }) {
       className="mx-auto flex min-h-screen w-full max-w-[2000px] select-none flex-col items-center gap-3 p-3 sm:p-4"
       style={{ touchAction: "manipulation" }}
     >
+      <PresenceHeartbeat game={variant === "crapless" ? "crapless" : "craps"} />
       <div className="flex w-full flex-wrap items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-3">
           <Link

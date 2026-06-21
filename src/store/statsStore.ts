@@ -28,6 +28,9 @@ interface StatsStore {
   wins: number;
   losses: number;
   biggestWin: number;
+  /** Game id + bet label of the single bet that set the current biggest win. */
+  biggestWinGame: string | null;
+  biggestWinBet: string | null;
   /** Signed run length: positive = win streak, negative = loss streak. */
   currentStreak: number;
   longestStreak: number;
@@ -41,6 +44,8 @@ interface StatsStore {
     wager: number;
     net: number;
     biggestProfit: number;
+    biggestWinGame: string;
+    biggestBetLabel: string;
   }): void;
   recordTopUp(amount: number): void;
   reset(): void;
@@ -52,6 +57,8 @@ const FRESH = {
   wins: 0,
   losses: 0,
   biggestWin: 0,
+  biggestWinGame: null as string | null,
+  biggestWinBet: null as string | null,
   currentStreak: 0,
   longestStreak: 0,
   perGame: {} as Record<string, PerGameStats>,
@@ -67,9 +74,10 @@ export const useStatsStore = create<StatsStore>()(
 
       setName: (name) => set({ name: name.slice(0, 24) }),
 
-      recordRound: ({ game, wager, net, biggestProfit }) =>
+      recordRound: ({ game, wager, net, biggestProfit, biggestWinGame, biggestBetLabel }) =>
         set((s) => {
           const won = net > 0;
+          const isRecord = biggestProfit > s.biggestWin;
           const lost = net < 0;
           const currentStreak = won
             ? s.currentStreak > 0
@@ -99,7 +107,9 @@ export const useStatsStore = create<StatsStore>()(
             rounds: s.rounds + 1,
             wins: s.wins + (won ? 1 : 0),
             losses: s.losses + (lost ? 1 : 0),
-            biggestWin: Math.max(s.biggestWin, biggestProfit),
+            biggestWin: isRecord ? biggestProfit : s.biggestWin,
+            biggestWinGame: isRecord ? biggestWinGame : s.biggestWinGame,
+            biggestWinBet: isRecord ? biggestBetLabel : s.biggestWinBet,
             currentStreak,
             longestStreak: Math.max(s.longestStreak, currentStreak),
             perGame: {

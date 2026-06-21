@@ -12,6 +12,7 @@ import {
   type OddsPolicy,
   type Variant,
 } from "@/engine/types";
+import { betDisplayLabel, gameIdForVariant } from "@/lib/betLabel";
 import { useGameStore, YOU } from "./gameStore";
 import { useStatsStore } from "./statsStore";
 
@@ -422,14 +423,16 @@ export function roll(): void {
       }));
       persistBankroll();
       if (resolutions.length > 0) {
+        const top = resolutions.reduce((best, r) =>
+          r.profit > best.profit ? r : best,
+        );
         useStatsStore.getState().recordRound({
           game: snapshot.variant,
           wager: resolutions.reduce((sum, r) => sum + r.staked, 0),
           net: resolutions.reduce((sum, r) => sum + r.profit, 0),
-          biggestProfit: resolutions.reduce(
-            (max, r) => Math.max(max, r.profit),
-            0,
-          ),
+          biggestProfit: Math.max(top.profit, 0),
+          biggestWinGame: gameIdForVariant(snapshot.variant),
+          biggestBetLabel: betDisplayLabel(top.defId, top.number),
         });
       }
       sounds.diceLand();

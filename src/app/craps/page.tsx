@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { BRAND } from "@/components/Brand";
 import GameRoot from "@/components/GameRoot";
 
 export const metadata: Metadata = {
-  title: "Craps — Midnight Rollers",
+  title: `Craps — ${BRAND}`,
 };
 
 export default async function CrapsPage({
