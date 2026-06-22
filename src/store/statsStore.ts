@@ -144,6 +144,6 @@ export const useStatsStore = create<StatsStore>()(
 
       reset: () => set({ ...FRESH }),
     }),
-    { name: "chipcircle-stats-v1" },
+    { name: "coinlounge-stats-v1" },
   ),
 );
