@@ -1,29 +1,41 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  MAX_MESSAGE_LENGTH,
-} from "@/lib/profanity";
-import { roomLabel, type ChatMessage } from "@/lib/chatRooms";
+import { MAX_MESSAGE_LENGTH } from "@/lib/profanity";
+import { roomTabLabel, type ChatMessage } from "@/lib/chatRooms";
 
 const GLASS =
   "border border-[var(--mr-border)] bg-[var(--mr-surface)] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md";
 
-/** Floating lobby/table chat. Backend-only: renders nothing in the no-backend
- *  public demo (the SSE stream 404s and we hide). Uses fetch/EventSource only —
- *  no auth/db imports — so it's safe to sync to the public repo. */
-export function ChatPanel({ room }: { room: string }) {
+const cap = (n: number) => (n > 99 ? "99+" : String(n));
+
+/** Floating multi-room chat (Global + tables). Backend-only: renders nothing in
+ *  the no-backend public demo (the SSE stream 404s and we hide). Uses
+ *  fetch/EventSource only — no auth/db imports — so it's safe to sync. */
+export function ChatPanel({ rooms }: { rooms: string[] }) {
+  const roomsKey = rooms.join(",");
   const [available, setAvailable] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [activeRoom, setActiveRoom] = useState(rooms[0]);
+  const [byRoom, setByRoom] = useState<Record<string, ChatMessage[]>>({});
+  const [unread, setUnread] = useState<Record<string, number>>({});
   const [signedIn, setSignedIn] = useState(false);
   const [text, setText] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Refs so the SSE listener reads live open/active state, not stale closures.
+  const openRef = useRef(open);
+  const activeRoomRef = useRef(activeRoom);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+  useEffect(() => {
+    activeRoomRef.current = activeRoom;
+  }, [activeRoom]);
+
   // Identity probe — drives whether the composer is enabled. Re-checked when the
-  // panel is opened and on window focus, since sign-in can happen (via the
-  // lobby dialog) after this component already mounted.
+  // panel opens and on window focus, since sign-in can happen after mount.
   useEffect(() => {
     let cancelled = false;
     const probe = () => {
@@ -42,10 +54,12 @@ export function ChatPanel({ room }: { room: string }) {
     };
   }, [open]);
 
-  // SSE subscription. onopen ⇒ backend present; error-before-open ⇒ hide.
+  // One SSE connection for all offered rooms. onopen ⇒ backend present.
   useEffect(() => {
-    setMessages([]);
-    const es = new EventSource(`/api/chat/stream?room=${encodeURIComponent(room)}`);
+    setByRoom({});
+    const es = new EventSource(
+      `/api/chat/stream?rooms=${encodeURIComponent(roomsKey)}`,
+    );
     let opened = false;
 
     es.addEventListener("open", () => {
@@ -54,16 +68,26 @@ export function ChatPanel({ room }: { room: string }) {
     });
     es.addEventListener("init", (e) => {
       const incoming: ChatMessage[] = JSON.parse(e.data);
-      setMessages(incoming);
+      const grouped: Record<string, ChatMessage[]> = {};
+      for (const m of incoming) (grouped[m.room] ??= []).push(m);
+      setByRoom(grouped);
     });
     es.addEventListener("message", (e) => {
       const msg: ChatMessage = JSON.parse(e.data);
-      setMessages((prev) =>
-        prev.some((m) => m.id === msg.id) ? prev : [...prev, msg],
-      );
+      setByRoom((prev) => {
+        const list = prev[msg.room] ?? [];
+        if (list.some((m) => m.id === msg.id)) return prev;
+        return { ...prev, [msg.room]: [...list, msg] };
+      });
+      const unseen = !openRef.current || msg.room !== activeRoomRef.current;
+      if (!msg.mine && unseen) {
+        setUnread((prev) => ({
+          ...prev,
+          [msg.room]: (prev[msg.room] ?? 0) + 1,
+        }));
+      }
     });
     es.addEventListener("error", () => {
-      // Never connected → no backend (public demo): give up and hide.
       if (!opened) {
         setAvailable(false);
         es.close();
@@ -71,13 +95,21 @@ export function ChatPanel({ room }: { room: string }) {
     });
 
     return () => es.close();
-  }, [room]);
+  }, [roomsKey]);
+
+  // Mark the visible room read when the panel is open / when switching to it.
+  useEffect(() => {
+    if (!open) return;
+    setUnread((prev) => (prev[activeRoom] ? { ...prev, [activeRoom]: 0 } : prev));
+  }, [open, activeRoom]);
+
+  const messages = byRoom[activeRoom] ?? [];
 
   // Keep the latest message in view.
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, open]);
+  }, [messages, open, activeRoom]);
 
   if (available === false) return null;
 
@@ -90,7 +122,7 @@ export function ChatPanel({ room }: { room: string }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "same-origin",
-      body: JSON.stringify({ room, body }),
+      body: JSON.stringify({ room: activeRoom, body }),
     }).catch(() => null);
     if (!res) return;
     if (res.status === 401) {
@@ -107,10 +139,13 @@ export function ChatPanel({ room }: { room: string }) {
       return;
     }
     const data = await res.json().catch(() => null);
-    if (data?.message) {
-      setMessages((prev) =>
-        prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message],
-      );
+    const msg: ChatMessage | undefined = data?.message;
+    if (msg) {
+      setByRoom((prev) => {
+        const list = prev[msg.room] ?? [];
+        if (list.some((m) => m.id === msg.id)) return prev;
+        return { ...prev, [msg.room]: [...list, msg] };
+      });
     }
   };
 
@@ -124,6 +159,8 @@ export function ChatPanel({ room }: { room: string }) {
     setNotice("Thanks — reported for review.");
   };
 
+  const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
+
   if (!open) {
     return (
       <button
@@ -133,6 +170,14 @@ export function ChatPanel({ room }: { room: string }) {
         aria-label="Open chat"
       >
         💬 Chat
+        {totalUnread > 0 && (
+          <span
+            className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold"
+            style={{ background: "var(--mr-accent)", color: "var(--mr-accent-text)" }}
+          >
+            {cap(totalUnread)}
+          </span>
+        )}
       </button>
     );
   }
@@ -141,13 +186,38 @@ export function ChatPanel({ room }: { room: string }) {
     <div
       className={`fixed bottom-4 right-4 z-40 flex h-[26rem] w-[20rem] flex-col rounded-2xl ${GLASS}`}
     >
-      <div className="flex items-center justify-between border-b border-[var(--mr-border)] px-3 py-2">
-        <span className="font-marquee text-sm font-bold">
-          {roomLabel(room)} chat
-        </span>
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--mr-border)] px-2 py-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+          {rooms.map((r) => {
+            const isActive = r === activeRoom;
+            const n = unread[r] ?? 0;
+            return (
+              <button
+                key={r}
+                onClick={() => setActiveRoom(r)}
+                className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition"
+                style={
+                  isActive
+                    ? { background: "var(--mr-accent)", color: "var(--mr-accent-text)" }
+                    : { color: "var(--mr-dim)" }
+                }
+              >
+                {roomTabLabel(r)}
+                {n > 0 && !isActive && (
+                  <span
+                    className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                    style={{ background: "var(--mr-accent)", color: "var(--mr-accent-text)" }}
+                  >
+                    {cap(n)}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
         <button
           onClick={() => setOpen(false)}
-          className="text-[color:var(--mr-dim)] transition hover:text-[color:var(--mr-accent)]"
+          className="shrink-0 px-1 text-[color:var(--mr-dim)] transition hover:text-[color:var(--mr-accent)]"
           aria-label="Close chat"
         >
           ✕
