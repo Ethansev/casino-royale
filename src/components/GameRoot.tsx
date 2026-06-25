@@ -7,6 +7,8 @@ import type { Variant } from "@/engine/types";
 import { BRAND } from "./Brand";
 import { ChipEmblem } from "./ChipEmblem";
 import { PresenceHeartbeat } from "./PresenceHeartbeat";
+import { ChatPanel } from "./chat/ChatPanel";
+import { tableRoom } from "@/lib/chatRooms";
 import { ChipTray } from "./hud/ChipTray";
 import { DealerBanner } from "./hud/DealerBanner";
 import { FlyingChips } from "./hud/FlyingChips";
@@ -114,6 +116,7 @@ export default function GameRoot({ variant }: { variant: Variant }) {
       style={{ touchAction: "manipulation" }}
     >
       <PresenceHeartbeat game={variant === "crapless" ? "crapless" : "craps"} />
+      <ChatPanel room={tableRoom(variant === "crapless" ? "crapless" : "craps")} />
       <div className="flex w-full flex-wrap items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-3">
           <Link
